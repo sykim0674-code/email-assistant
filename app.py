@@ -42,7 +42,7 @@ html, body, [class*="st-"] {
 }
 .stApp { background-color: var(--bg-color); }
 
-/* 🌟 상단 헤더 및 사이드바 접기 아이콘 완벽 숨기기 (업데이트) */
+/* 상단 헤더 및 사이드바 접기 아이콘 완벽 숨기기 */
 [data-testid="stAppViewBlockContainer"] > div:first-child,
 header[data-testid="stHeader"],
 [data-testid="collapsedControl"],
@@ -93,17 +93,21 @@ button[title="Collapse sidebar"],
     font-weight: 500 !important;
 }
 
-/* 메일 작성하기 메인 버튼 (강제 검정 배경 + 흰 글씨) */
+/* 🌟 메일 작성하기 메인 버튼 (배경 검정 + 글씨 완벽 하양) */
 .stButton > button[kind="primary"] {
     background-color: #000000 !important;
-    color: #ffffff !important;
     border: none !important;
     border-radius: var(--radius) !important;
     width: 100% !important;
     height: 48px;
-    font-weight: 600;
     box-shadow: none !important;
     margin-top: 24px;
+}
+/* 버튼 내부의 텍스트 요소(p, span 등)까지 강제로 하얀색 지정 */
+.stButton > button[kind="primary"] * {
+    color: #ffffff !important; 
+    font-weight: 600 !important;
+    font-size: 15px !important;
 }
 
 /* 라디오 버튼(Type: Draft/Reply) 초미니멀 스타일링 */
@@ -177,8 +181,6 @@ if "result_body" not in st.session_state:
 # 3. 좌측 패널 (Sidebar)
 with st.sidebar:
     st.markdown("<h2 style='margin-top:0;'>✉️ Mail Assistant</h2>", unsafe_allow_html=True)
-    
-    # 🌟 사이드바 설명 심플하게 변경
     st.markdown("<p style='color: var(--text-muted); font-size: 13px; margin-bottom: 24px;'>메일 작성 도구</p>", unsafe_allow_html=True)
     
     email_type = st.radio("Type", ["Draft", "Reply"], horizontal=True)
@@ -195,7 +197,7 @@ with st.sidebar:
     if email_type == "Reply":
         received_email = st.text_area("Previous email", placeholder="Paste the previous email here", height=100)
     
-    # Generate 버튼 (이모지 제거, 순수 텍스트)
+    # Generate 버튼
     submit_btn = st.button("Generate", type="primary", use_container_width=True)
 
 # 4. 우측 패널 뱃지
@@ -279,7 +281,6 @@ elif st.session_state.status == "Generating":
 
 # 6. 기본 상태 및 완료 상태 화면 출력
 if st.session_state.status == "Waiting":
-    # 🌟 이모지 간격 축소, 텍스트 변경 및 크기 축소
     st.markdown("""
         <div style='display:flex; flex-direction:column; align-items:center; justify-content:center; height: 60vh; color: var(--border-color);'>
             <h1 style='font-size: 48px; margin-bottom: 4px;'>✉️</h1>
