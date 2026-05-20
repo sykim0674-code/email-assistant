@@ -1,8 +1,8 @@
 import streamlit as st
 import google.generativeai as genai
 
-# 1. 페이지 기본 설정
-st.set_page_config(page_title="Mail Assistant", page_icon="✉️", layout="wide")
+# 1. 페이지 기본 설정 (layout="wide" 제거 및 타이틀 변경)
+st.set_page_config(page_title="Mail Assistant", page_icon="✉️")
 
 # ==============================================================================
 # 커스텀 CSS 주입 (이미지 무드 반영: 크림/그린 톤 & 라운드 디자인)
@@ -83,7 +83,8 @@ div[role="radiogroup"] label {
 st.markdown(custom_css, unsafe_allow_html=True)
 # ==============================================================================
 
-st.title("✉️ 글로벌 비즈니스 메일 어시스턴트")
+# 타이틀 변경
+st.title("✉️ Mail Assistant")
 st.markdown("초안부터 답장까지, 핵심 내용만 입력하면 상황과 어조에 맞는 프로페셔널한 비즈니스 이메일을 다국어로 작성해 줍니다.")
 
 # 2. API 키 설정 (사이드바 입력창을 삭제하고 Secrets에서 불러오기)
