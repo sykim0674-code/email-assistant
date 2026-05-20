@@ -1,172 +1,310 @@
 import streamlit as st
 import google.generativeai as genai
+import time
 
-# 1. 페이지 기본 설정 (layout="wide" 제거 및 타이틀 변경)
-st.set_page_config(page_title="Mail Assistant", page_icon="✉️")
+# 1. 페이지 기본 설정 (전체 화면 사용)
+st.set_page_config(page_title="Mail Assistant", page_icon="✉️", layout="wide", initial_sidebar_state="expanded")
 
 # ==============================================================================
-# 커스텀 CSS 주입 (이미지 무드 반영: 크림/그린 톤 & 라운드 디자인)
+# 🎨 커스텀 CSS 주입 (미니멀, 플랫 디자인, 다크모드 대응, 스켈레톤 애니메이션)
 # ==============================================================================
 custom_css = """
 <style>
-/* 1. 전체 배경 및 텍스트 기본 색상 (크림색 배경) */
-[data-testid="stAppViewContainer"] {
-    background-color: #F7F6EE; /* 따뜻한 크림/베이지 톤 */
-    color: #3E4B31; /* 짙은 올리브 그린 텍스트 */
+/* 폰트 불러오기 */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;700&display=swap');
+
+/* 라이트 모드 (기본) 색상 변수 */
+:root {
+    --bg-color: #ffffff;
+    --text-color: #111111;
+    --text-muted: #666666;
+    --input-bg: #f5f5f5;
+    --border-color: #e0e0e0;
+    --primary-color: #000000;
+    --primary-text: #ffffff;
+    --radius: 8px;
+    --font-family: 'Inter', 'Noto Sans KR', sans-serif;
 }
 
-/* 상단 헤더 투명화 */
-[data-testid="stHeader"] {
-    background-color: rgba(0,0,0,0);
+/* 다크 모드 색상 변수 */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-color: #121212;
+        --text-color: #ffffff;
+        --text-muted: #a0a0a0;
+        --input-bg: #222222;
+        --border-color: #333333;
+        --primary-color: #ffffff;
+        --primary-text: #000000;
+    }
 }
 
-/* 2. 제목 폰트 스타일링 (이미지처럼 우아한 세리프 느낌 추가) */
-h1, h2, h3 {
-    color: #3E4B31 !important;
-    font-family: 'Georgia', 'Times New Roman', serif;
+/* 전체 폰트 및 배경 적용 */
+html, body, [class*="st-"] {
+    font-family: var(--font-family) !important;
+    color: var(--text-color);
+}
+.stApp { background-color: var(--bg-color); }
+
+/* 좌측 패널 (Sidebar) 고정 및 스타일링 */
+[data-testid="stSidebar"] {
+    background-color: var(--bg-color);
+    border-right: 0.5px solid var(--border-color);
+    min-width: 260px !important;
+    max-width: 260px !important;
+}
+[data-testid="stSidebarNav"], [data-testid="collapsedControl"] { display: none; } /* 불필요한 Streamlit 기본 요소 숨김 */
+
+/* 입력창(Input, TextArea, Selectbox) 플랫 디자인 */
+.stTextInput > div > div > input,
+.stTextArea > div > div > textarea,
+.stSelectbox > div > div > div {
+    background-color: var(--input-bg) !important;
+    border: 0.5px solid var(--border-color) !important;
+    border-radius: var(--radius) !important;
+    box-shadow: none !important;
+    color: var(--text-color) !important;
+    font-size: 14px !important;
 }
 
-/* 일반 텍스트 라벨 색상 */
-p, label, span {
-    color: #4A573D !important;
+/* 포커스 시 테두리 진하게 */
+.stTextInput > div > div > input:focus,
+.stTextArea > div > div > textarea:focus,
+.stSelectbox > div > div > div:focus {
+    border-color: var(--text-color) !important;
 }
 
-/* 3. 입력창(Input, TextArea, Selectbox) 디자인 (둥근 모서리 & 연한 테두리) */
-div[data-baseweb="input"] > div, 
-div[data-baseweb="textarea"] > div,
-div[data-baseweb="select"] > div {
-    background-color: #FFFFFF !important;
-    border: 1px solid #C5CCB3 !important; /* 세이지 그린 테두리 */
-    border-radius: 16px !important; /* 이미지처럼 둥글게 */
-    color: #3E4B31 !important;
+/* 메일 작성하기 메인 버튼 */
+.stButton > button[kind="primary"] {
+    background-color: var(--primary-color) !important;
+    color: var(--primary-text) !important;
+    border: none !important;
+    border-radius: var(--radius) !important;
+    width: 100% !important;
+    height: 48px;
+    font-weight: 600;
+    box-shadow: none !important;
+    margin-top: 10px;
 }
 
-/* 포커스 되었을 때 진한 그린 테두리 */
-div[data-baseweb="input"] > div:focus-within, 
-div[data-baseweb="textarea"] > div:focus-within,
-div[data-baseweb="select"] > div:focus-within {
-    border-color: #697C47 !important;
-    box-shadow: 0 0 0 1px #697C47 !important;
+/* 상단 툴바 버튼 (다시 생성, 복사 등) */
+.stButton > button[kind="secondary"] {
+    background-color: var(--input-bg) !important;
+    color: var(--text-color) !important;
+    border: 0.5px solid var(--border-color) !important;
+    border-radius: var(--radius) !important;
+    font-size: 13px;
+    height: 36px;
+    padding: 0 16px;
+    box-shadow: none !important;
 }
 
-/* 4. 버튼 스타일링 (짙은 올리브 그린 메인 버튼) */
-[data-testid="baseButton-primary"] {
-    background-color: #55663D;
-    color: #FFFFFF !important;
-    border-radius: 24px;
-    border: none;
-    padding: 0.6rem 1.5rem;
-    font-weight: bold;
-    transition: all 0.3s ease;
+/* 라디오 버튼(토글 형태) 스타일링 */
+div[role="radiogroup"] {
+    gap: 0px;
+    background: var(--input-bg);
+    padding: 4px;
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border-color);
 }
-
-[data-testid="baseButton-primary"]:hover {
-    background-color: #697C47;
-    color: #FFFFFF !important;
-    box-shadow: 0 4px 10px rgba(85, 102, 61, 0.3);
-}
-
-/* 5. 알림창(Info, Success 등) 스타일링 */
-[data-testid="stAlert"] {
-    background-color: #E6EAD8; /* 연한 세이지 그린 배경 */
-    border: none;
-    border-radius: 16px;
-    color: #3E4B31;
-}
-
-/* 라디오 버튼 선택 색상 변경 */
 div[role="radiogroup"] label {
-    color: #3E4B31 !important;
+    padding: 6px 12px;
+    border-radius: 6px;
+    margin: 0;
+}
+
+/* 상태 뱃지 */
+.status-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 13px;
+    font-weight: 600;
+    background-color: var(--input-bg);
+    border: 0.5px solid var(--border-color);
+    color: var(--text-color);
+}
+
+/* 스켈레톤 로딩 애니메이션 */
+@keyframes shimmer {
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+}
+.skeleton {
+    animation: shimmer 2s infinite linear;
+    background: linear-gradient(to right, var(--input-bg) 4%, var(--border-color) 25%, var(--input-bg) 36%);
+    background-size: 1000px 100%;
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+}
+.sk-title { height: 40px; width: 60%; margin-top: 20px;}
+.sk-meta { height: 48px; width: 100%; margin-bottom: 40px; }
+.sk-line { height: 20px; width: 100%; margin-bottom: 12px; }
+.sk-line-short { height: 20px; width: 80%; margin-bottom: 12px; }
+
+/* 메인 영역 여백 조정 */
+.block-container {
+    padding-top: 2rem !important;
+    padding-left: 3rem !important;
+    padding-right: 3rem !important;
+    max-width: 1200px !important;
 }
 </style>
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 # ==============================================================================
 
-# 타이틀 변경
-st.title("✉️ Mail Assistant")
-st.markdown("초안부터 답장까지, 핵심 내용만 입력하면 상황과 어조에 맞는 프로페셔널한 비즈니스 이메일을 다국어로 작성해 줍니다.")
+# 2. 세션 상태 초기화 (결과물 및 상태 저장용)
+if "status" not in st.session_state:
+    st.session_state.status = "대기 중 ⚪"
+if "result_subject" not in st.session_state:
+    st.session_state.result_subject = ""
+if "result_body" not in st.session_state:
+    st.session_state.result_body = ""
 
-# 2. API 키 설정 (사이드바 입력창을 삭제하고 Secrets에서 불러오기)
-api_key = st.secrets["GEMINI_API_KEY"]
+# 3. 좌측 패널 (Sidebar - 고정 너비 입력 폼)
+with st.sidebar:
+    st.markdown("<h2 style='margin-top:0;'>✉️ Mail Assistant</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='color: var(--text-muted); font-size: 13px; margin-bottom: 24px;'>초안부터 답장까지, 핵심 내용만 입력하면 상황에 맞는 메일을 작성해 줍니다.</p>", unsafe_allow_html=True)
+    
+    email_type = st.radio("작성 유형", ["초안", "답장", "후속"], horizontal=True)
+    lang = st.selectbox("작성 언어", ["한국어", "English", "日本語", "中文"])
+    tone = st.selectbox("메일 어조", ["정중하게", "공식적으로", "친근하게", "간결하게", "설득력 있게"])
+    category = st.selectbox("메일 종류", ["단순 정보 전달", "미팅 요청", "제안/영업", "사과/해명", "감사 표현", "일정 조율", "보고/공유"])
+    
+    sender_name = st.text_input("내 이름(발신자)")
+    recipient = st.text_input("받는 사람", placeholder="협력사 김팀장님")
+    main_content = st.text_area("주요 내용", placeholder="키워드나 개요만 적어도 됩니다", height=100)
+    
+    received_email = ""
+    if email_type in ["답장", "후속"]:
+        received_email = st.text_area("이전 메일 내용", placeholder="배경이 되는 이전 메일을 붙여넣으세요", height=100)
+    
+    # 생성 버튼 트리거
+    submit_btn = st.button("🚀 메일 작성하기", type="primary", use_container_width=True)
 
-# 3. 시스템 프롬프트
-system_prompt = """
-당신은 빠르고 정확하며 센스 있는 글로벌 '비즈니스 이메일 작성 어시스턴트'입니다.
-사용자가 입력한 정보 바탕으로 즉시 발송 가능한 수준의 프로페셔널한 이메일을 작성합니다.
+# 4. 우측 패널 (Main Content - 상단 툴바)
+col_badge, col_empty, col_btn1, col_btn2 = st.columns([2, 5, 1.5, 1.5])
+with col_badge:
+    st.markdown(f"<div class='status-badge'>{st.session_state.status}</div>", unsafe_allow_html=True)
+with col_btn1:
+    if st.session_state.result_body:
+        # Streamlit은 자체 클립보드 복사 기능이 없으므로 다시 생성 기능으로 대체하거나 텍스트를 제공합니다.
+        copy_btn = st.button("📋 복사하기", type="secondary", use_container_width=True)
+        if copy_btn:
+            st.toast("본문을 드래그해서 복사해 주세요!", icon="✅")
+with col_btn2:
+    if st.session_state.result_body:
+        if st.button("🔄 다시 생성", type="secondary", use_container_width=True):
+            submit_btn = True # 버튼 강제 트리거
 
-[작성 규칙]
-1. 다국어 지원: 사용자가 지정한 언어로 작성하며, 해당 언어권의 비즈니스 매너에 맞게 자연스럽게 윤문합니다.
-2. 유형 맞춤: 초안은 목적이 명확하게, 답장은 상대방의 요청에 적절히 응답하며 내용을 녹여냅니다.
-3. 톤앤매너: 지정한 어조와 종류에 맞춰 문체와 분위기를 조정합니다.
-4. 제목 제안: 목적을 파악할 수 있는 제목 2개를 제안합니다. (답장은 'RE:' 포함)
-5. 가독성: 글머리 기호(*, -) 등을 활용하여 읽기 쉽게 구성합니다.
-6. 마무리 규칙: 이메일의 마지막은 반드시 사용자가 입력한 '[내 이름] 드림'으로만 끝내십시오. 소속, 직급, 날짜, 시간 등 다른 대괄호 표시([ ]) 형태의 빈칸은 절대 생성하지 마십시오.
-
-[출력 형식]
-📌 제목 제안:
-- [제안 1]
-- [제안 2]
-
-✉️ 이메일 본문:
-
-(작성된 이메일 내용)
-"""
-
-# 4. 사용자 입력 폼 구성
-col1, col2 = st.columns(2)
-
-with col1:
-    email_type = st.radio("작성 유형", ["초안", "답장"], horizontal=True)
-    lang = st.selectbox("작성 언어", ["한국어", "영어", "일본어", "중국어"])
-    sender_name = st.text_input("내 이름 (발신자)")
-    recipient = st.text_input("받는 사람 (예: 협력사 김팀장님)")
-
-with col2:
-    tone = st.selectbox("메일 어조", ["정중하게", "친근하게", "간결하고 드라이하게"])
-    category = st.selectbox("메일 종류", ["단순 정보 전달", "회신", "제안", "사과 및 양해"])
-
-main_content = st.text_area("주요 내용 (키워드나 개요만 적어도 됩니다)", height=150)
-
-received_email = ""
-if email_type == "답장":
-    received_email = st.text_area("받은 메일 내용 (여기에 붙여넣어 주세요)", height=150)
-
-# 5. 메일 생성 로직
-if st.button("🚀 메일 작성하기", type="primary"):
+# 5. 메일 생성 로직 및 결과 렌더링
+if submit_btn:
     if not sender_name or not recipient or not main_content:
-        st.warning("내 이름, 받는 사람, 주요 내용을 모두 입력해 주세요.")
+        st.sidebar.warning("이름, 받는 사람, 주요 내용은 필수입니다.")
     else:
-        try:
-            # API 키 설정 및 최신 모델(2.5-flash) 적용
-            genai.configure(api_key=api_key)
-            model = genai.GenerativeModel(
-                model_name="gemini-2.5-flash", 
-                system_instruction=system_prompt
-            )
-            
-            # 사용자 입력을 프롬프트로 구성 (내 이름 포함)
-            user_prompt = f"""
-            * 작성 유형: {email_type}
-            * 작성 언어: {lang}
-            * 내 이름: {sender_name}
-            * 받는 사람: {recipient}
-            * 메일 어조: {tone}
-            * 메일 종류: {category}
-            * 주요 내용: {main_content}
-            """
-            
-            if email_type == "답장":
-                user_prompt += f"\n* 받은 메일:\n{received_email}"
+        # 상태 업데이트 및 스켈레톤 로딩 렌더링
+        st.session_state.status = "생성 중 ⏳"
+        st.rerun() # 상태 변경 후 UI 리프레시
 
-            with st.spinner("AI가 메일을 작성하고 있습니다... ✍️"):
-                response = model.generate_content(user_prompt)
-                
-            st.success("메일 작성이 완료되었습니다!")
-            
-            # 결과 출력
-            st.markdown("### ✨ 완성된 메일")
-            st.info(response.text)
-            
-        except Exception as e:
-            st.error(f"오류가 발생했습니다: {e}")
+elif st.session_state.status == "생성 중 ⏳":
+    # 스켈레톤 UI 표시
+    placeholder = st.empty()
+    placeholder.markdown("""
+        <div class="skeleton sk-title"></div>
+        <div class="skeleton sk-meta"></div>
+        <div class="skeleton sk-line"></div>
+        <div class="skeleton sk-line"></div>
+        <div class="skeleton sk-line-short"></div>
+        <div style="margin-top:20px;" class="skeleton sk-line"></div>
+        <div class="skeleton sk-line-short"></div>
+    """, unsafe_allow_html=True)
+    
+    # 기획서 요청대로 약 1.2초 대기
+    time.sleep(1.2)
+    
+    try:
+        api_key = st.secrets["GEMINI_API_KEY"]
+        genai.configure(api_key=api_key)
+        
+        system_prompt = """
+        당신은 글로벌 비즈니스 이메일 전문 AI 어시스턴트입니다.
+        주어진 정보를 바탕으로 해당 언어권의 비즈니스 매너에 맞는 완벽한 이메일을 작성하세요.
+        메일 종류(제안, 사과, 미팅 등)에 따라 본문의 템플릿과 구조를 다르게 적용하세요.
+        
+        [출력 형식]
+        제목: [직관적이고 명확한 메일 제목]
+        ---
+        [이메일 본문]
+        - 마지막은 반드시 '[내 이름] 드림' 또는 해당 언어권에 맞는 맺음말로 끝내세요.
+        - [ ] 형태의 빈칸은 절대 만들지 마세요.
+        """
+        model = genai.GenerativeModel("gemini-2.5-flash", system_instruction=system_prompt)
+        
+        user_prompt = f"""
+        * 작성 유형: {email_type}
+        * 작성 언어: {lang}
+        * 메일 어조: {tone}
+        * 메일 종류: {category}
+        * 내 이름: {sender_name}
+        * 받는 사람: {recipient}
+        * 주요 내용: {main_content}
+        * 이전 메일 내용: {received_email}
+        """
+        
+        response = model.generate_content(user_prompt)
+        text = response.text
+        
+        # 제목과 본문 분리 파싱
+        subject, body = "", text
+        if "제목:" in text and "---" in text:
+            parts = text.split("---")
+            subject = parts[0].replace("제목:", "").strip()
+            body = parts[1].strip()
+        elif "제목:" in text:
+            lines = text.split("\n")
+            subject = lines[0].replace("제목:", "").strip()
+            body = "\n".join(lines[1:]).strip()
+
+        # 결과 저장 및 상태 업데이트
+        st.session_state.result_subject = subject
+        st.session_state.result_body = body
+        st.session_state.status = "완료 ✅"
+        
+        placeholder.empty() # 스켈레톤 지우기
+        st.rerun()
+
+    except Exception as e:
+        placeholder.empty()
+        st.error(f"오류가 발생했습니다: {e}")
+        st.session_state.status = "대기 중 ⚪"
+
+# 6. 기본 상태 및 완료 상태 화면 출력
+if st.session_state.status == "대기 중 ⚪":
+    st.markdown("""
+        <div style='display:flex; flex-direction:column; align-items:center; justify-content:center; height: 60vh; color: var(--border-color);'>
+            <h1 style='font-size: 48px; margin-bottom: 16px;'>✉️</h1>
+            <h3 style='color: var(--text-muted); font-weight: 500;'>좌측 폼을 채우고 메일을 작성해 보세요</h3>
+        </div>
+    """, unsafe_allow_html=True)
+
+elif st.session_state.status == "완료 ✅":
+    # 이메일 제목 (굵게, 큰 폰트)
+    st.markdown(f"<h1 style='font-size: 32px; font-weight: 700; margin-top: 16px; margin-bottom: 24px;'>{st.session_state.result_subject}</h1>", unsafe_allow_html=True)
+    
+    # 메타 정보 그리드 (보내는 이 / 받는 이 / 어조 / 언어 등)
+    st.markdown(f"""
+        <div style='display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; background: var(--input-bg); padding: 16px; border-radius: var(--radius); border: 0.5px solid var(--border-color); margin-bottom: 32px; font-size: 14px;'>
+            <div><span style='color: var(--text-muted); font-size: 12px; display: block;'>보내는 이</span><b>{sender_name}</b></div>
+            <div><span style='color: var(--text-muted); font-size: 12px; display: block;'>받는 이</span><b>{recipient}</b></div>
+            <div><span style='color: var(--text-muted); font-size: 12px; display: block;'>어조 및 언어</span><b>{tone} · {lang}</b></div>
+            <div><span style='color: var(--text-muted); font-size: 12px; display: block;'>분류</span><b>{category}</b></div>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # 본문 영역 (줄간격 넉넉하게, pre-wrap)
+    st.markdown(f"""
+        <div style='white-space: pre-wrap; line-height: 1.8; font-size: 16px; color: var(--text-color);'>
+{st.session_state.result_body}
+        </div>
+    """, unsafe_allow_html=True)
