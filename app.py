@@ -6,7 +6,7 @@ import time
 st.set_page_config(page_title="Mail Assistant", page_icon="✉️", layout="wide", initial_sidebar_state="expanded")
 
 # ==============================================================================
-# 🎨 커스텀 CSS 주입 (미니멀, 플랫 디자인, 다크모드 대응, 스켈레톤 애니메이션)
+# 🎨 커스텀 CSS 주입 (미니멀, 플랫 디자인, 다크모드 대응, 스켈레톤 애니메이션, 레이아웃 조정)
 # ==============================================================================
 custom_css = """
 <style>
@@ -46,14 +46,19 @@ html, body, [class*="st-"] {
 }
 .stApp { background-color: var(--bg-color); }
 
+/* 상단 헤더 및 불필요한 기본 UI 숨기기 */
+[data-testid="stAppViewBlockContainer"] > div:first-child,
+header[data-testid="stHeader"],
+#MainMenu, footer, .stDeployButton { display: none !important; }
+
 /* 좌측 패널 (Sidebar) 고정 및 스타일링 */
 [data-testid="stSidebar"] {
     background-color: var(--bg-color);
     border-right: 0.5px solid var(--border-color);
-    min-width: 260px !important;
-    max-width: 260px !important;
+    min-width: 400px !important;
+    max-width: 400px !important;
 }
-[data-testid="stSidebarNav"], [data-testid="collapsedControl"] { display: none; } /* 불필요한 Streamlit 기본 요소 숨김 */
+[data-testid="stSidebarNav"], [data-testid="collapsedControl"] { display: none; }
 
 /* 입력창(Input, TextArea, Selectbox) 플랫 디자인 */
 .stTextInput > div > div > input,
@@ -113,7 +118,7 @@ div[role="radiogroup"] label {
     margin: 0;
 }
 
-/* 상태 뱃지 */
+/* 상태 뱃지 잘림 방지 추가 */
 .status-badge {
     display: inline-block;
     padding: 6px 12px;
@@ -123,6 +128,8 @@ div[role="radiogroup"] label {
     background-color: var(--input-bg);
     border: 0.5px solid var(--border-color);
     color: var(--text-color);
+    white-space: nowrap;
+    width: fit-content;
 }
 
 /* 스켈레톤 로딩 애니메이션 */
@@ -167,21 +174,23 @@ with st.sidebar:
     st.markdown("<h2 style='margin-top:0;'>✉️ Mail Assistant</h2>", unsafe_allow_html=True)
     st.markdown("<p style='color: var(--text-muted); font-size: 13px; margin-bottom: 24px;'>초안부터 답장까지, 핵심 내용만 입력하면 상황에 맞는 메일을 작성해 줍니다.</p>", unsafe_allow_html=True)
     
-    email_type = st.radio("작성 유형", ["초안", "답장", "후속"], horizontal=True)
-    lang = st.selectbox("작성 언어", ["한국어", "English", "日本語", "中文"])
-    tone = st.selectbox("메일 어조", ["정중하게", "공식적으로", "친근하게", "간결하게", "설득력 있게"])
-    category = st.selectbox("메일 종류", ["단순 정보 전달", "미팅 요청", "제안/영업", "사과/해명", "감사 표현", "일정 조율", "보고/공유"])
+    # 6. 영문 라벨 적용 및 항목 수정
+    email_type = st.radio("Type", ["Draft", "Reply"], horizontal=True)
+    lang = st.selectbox("Language", ["한국어", "English", "日本語", "中文"])
+    tone = st.selectbox("Tone", ["정중하게", "공식적으로", "친근하게", "간결하게", "설득력 있게"])
+    category = st.selectbox("Category", ["단순 정보 전달", "미팅 요청", "제안/영업", "사과/해명", "감사 표현", "일정 조율", "보고/공유"])
     
-    sender_name = st.text_input("내 이름(발신자)")
-    recipient = st.text_input("받는 사람", placeholder="협력사 김팀장님")
-    main_content = st.text_area("주요 내용", placeholder="키워드나 개요만 적어도 됩니다", height=100)
+    sender_name = st.text_input("Sender")
+    recipient = st.text_input("Recipient", placeholder="협력사 김팀장님")
+    main_content = st.text_area("Key points", placeholder="Keywords or Brief outline", height=100)
     
     received_email = ""
-    if email_type in ["답장", "후속"]:
-        received_email = st.text_area("이전 메일 내용", placeholder="배경이 되는 이전 메일을 붙여넣으세요", height=100)
+    # "Reply" 선택 시에만 이전 메일 입력창 표시
+    if email_type == "Reply":
+        received_email = st.text_area("Previous email", placeholder="Paste the previous email here", height=100)
     
-    # 생성 버튼 트리거
-    submit_btn = st.button("🚀 메일 작성하기", type="primary", use_container_width=True)
+    # 5. 텍스트 변경
+    submit_btn = st.button("🚀 Generate", type="primary", use_container_width=True)
 
 # 4. 우측 패널 (Main Content - 상단 툴바)
 col_badge, col_empty, col_btn1, col_btn2 = st.columns([2, 5, 1.5, 1.5])
@@ -189,7 +198,6 @@ with col_badge:
     st.markdown(f"<div class='status-badge'>{st.session_state.status}</div>", unsafe_allow_html=True)
 with col_btn1:
     if st.session_state.result_body:
-        # Streamlit은 자체 클립보드 복사 기능이 없으므로 다시 생성 기능으로 대체하거나 텍스트를 제공합니다.
         copy_btn = st.button("📋 복사하기", type="secondary", use_container_width=True)
         if copy_btn:
             st.toast("본문을 드래그해서 복사해 주세요!", icon="✅")
@@ -201,7 +209,7 @@ with col_btn2:
 # 5. 메일 생성 로직 및 결과 렌더링
 if submit_btn:
     if not sender_name or not recipient or not main_content:
-        st.sidebar.warning("이름, 받는 사람, 주요 내용은 필수입니다.")
+        st.sidebar.warning("Sender, Recipient, Key points 항목을 모두 입력해 주세요.")
     else:
         # 상태 업데이트 및 스켈레톤 로딩 렌더링
         st.session_state.status = "생성 중 ⏳"
@@ -220,7 +228,6 @@ elif st.session_state.status == "생성 중 ⏳":
         <div class="skeleton sk-line-short"></div>
     """, unsafe_allow_html=True)
     
-    # 기획서 요청대로 약 1.2초 대기
     time.sleep(1.2)
     
     try:
@@ -241,6 +248,7 @@ elif st.session_state.status == "생성 중 ⏳":
         """
         model = genai.GenerativeModel("gemini-2.5-flash", system_instruction=system_prompt)
         
+        # 영문 변수명 반영
         user_prompt = f"""
         * 작성 유형: {email_type}
         * 작성 언어: {lang}
@@ -292,7 +300,7 @@ elif st.session_state.status == "완료 ✅":
     # 이메일 제목 (굵게, 큰 폰트)
     st.markdown(f"<h1 style='font-size: 32px; font-weight: 700; margin-top: 16px; margin-bottom: 24px;'>{st.session_state.result_subject}</h1>", unsafe_allow_html=True)
     
-    # 메타 정보 그리드 (보내는 이 / 받는 이 / 어조 / 언어 등)
+    # 메타 정보 그리드
     st.markdown(f"""
         <div style='display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; background: var(--input-bg); padding: 16px; border-radius: var(--radius); border: 0.5px solid var(--border-color); margin-bottom: 32px; font-size: 14px;'>
             <div><span style='color: var(--text-muted); font-size: 12px; display: block;'>보내는 이</span><b>{sender_name}</b></div>
@@ -302,7 +310,7 @@ elif st.session_state.status == "완료 ✅":
         </div>
     """, unsafe_allow_html=True)
     
-    # 본문 영역 (줄간격 넉넉하게, pre-wrap)
+    # 본문 영역
     st.markdown(f"""
         <div style='white-space: pre-wrap; line-height: 1.8; font-size: 16px; color: var(--text-color);'>
 {st.session_state.result_body}
