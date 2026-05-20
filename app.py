@@ -2,17 +2,92 @@ import streamlit as st
 import google.generativeai as genai
 
 # 1. 페이지 기본 설정
-st.set_page_config(page_title="글로벌 비즈니스 메일 어시스턴트", page_icon="✉️", layout="wide")
+st.set_page_config(page_title="Mail Assistant", page_icon="✉️", layout="wide")
+
+# ==============================================================================
+# 커스텀 CSS 주입 (이미지 무드 반영: 크림/그린 톤 & 라운드 디자인)
+# ==============================================================================
+custom_css = """
+<style>
+/* 1. 전체 배경 및 텍스트 기본 색상 (크림색 배경) */
+[data-testid="stAppViewContainer"] {
+    background-color: #F7F6EE; /* 따뜻한 크림/베이지 톤 */
+    color: #3E4B31; /* 짙은 올리브 그린 텍스트 */
+}
+
+/* 상단 헤더 투명화 */
+[data-testid="stHeader"] {
+    background-color: rgba(0,0,0,0);
+}
+
+/* 2. 제목 폰트 스타일링 (이미지처럼 우아한 세리프 느낌 추가) */
+h1, h2, h3 {
+    color: #3E4B31 !important;
+    font-family: 'Georgia', 'Times New Roman', serif;
+}
+
+/* 일반 텍스트 라벨 색상 */
+p, label, span {
+    color: #4A573D !important;
+}
+
+/* 3. 입력창(Input, TextArea, Selectbox) 디자인 (둥근 모서리 & 연한 테두리) */
+div[data-baseweb="input"] > div, 
+div[data-baseweb="textarea"] > div,
+div[data-baseweb="select"] > div {
+    background-color: #FFFFFF !important;
+    border: 1px solid #C5CCB3 !important; /* 세이지 그린 테두리 */
+    border-radius: 16px !important; /* 이미지처럼 둥글게 */
+    color: #3E4B31 !important;
+}
+
+/* 포커스 되었을 때 진한 그린 테두리 */
+div[data-baseweb="input"] > div:focus-within, 
+div[data-baseweb="textarea"] > div:focus-within,
+div[data-baseweb="select"] > div:focus-within {
+    border-color: #697C47 !important;
+    box-shadow: 0 0 0 1px #697C47 !important;
+}
+
+/* 4. 버튼 스타일링 (짙은 올리브 그린 메인 버튼) */
+[data-testid="baseButton-primary"] {
+    background-color: #55663D;
+    color: #FFFFFF !important;
+    border-radius: 24px;
+    border: none;
+    padding: 0.6rem 1.5rem;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+[data-testid="baseButton-primary"]:hover {
+    background-color: #697C47;
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 10px rgba(85, 102, 61, 0.3);
+}
+
+/* 5. 알림창(Info, Success 등) 스타일링 */
+[data-testid="stAlert"] {
+    background-color: #E6EAD8; /* 연한 세이지 그린 배경 */
+    border: none;
+    border-radius: 16px;
+    color: #3E4B31;
+}
+
+/* 라디오 버튼 선택 색상 변경 */
+div[role="radiogroup"] label {
+    color: #3E4B31 !important;
+}
+</style>
+"""
+st.markdown(custom_css, unsafe_allow_html=True)
+# ==============================================================================
 
 st.title("✉️ 글로벌 비즈니스 메일 어시스턴트")
 st.markdown("초안부터 답장까지, 핵심 내용만 입력하면 상황과 어조에 맞는 프로페셔널한 비즈니스 이메일을 다국어로 작성해 줍니다.")
 
-# 2. 사이드바: API 키 입력란
-with st.sidebar:
-    st.header("설정")
-    api_key = st.text_input("Gemini API 키를 입력하세요", type="password")
-    st.markdown("---")
-    st.markdown("ℹ️ 구글 AI Studio에서 발급받은 API 키가 필요합니다.")
+# 2. API 키 설정 (사이드바 입력창을 삭제하고 Secrets에서 불러오기)
+api_key = st.secrets["GEMINI_API_KEY"]
 
 # 3. 시스템 프롬프트
 system_prompt = """
@@ -58,9 +133,7 @@ if email_type == "답장":
 
 # 5. 메일 생성 로직
 if st.button("🚀 메일 작성하기", type="primary"):
-    if not api_key:
-        st.error("좌측 사이드바에 Gemini API 키를 입력해 주세요!")
-    elif not sender_name or not recipient or not main_content:
+    if not sender_name or not recipient or not main_content:
         st.warning("내 이름, 받는 사람, 주요 내용을 모두 입력해 주세요.")
     else:
         try:
