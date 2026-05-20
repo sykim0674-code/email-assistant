@@ -61,7 +61,7 @@ button[title="Collapse sidebar"],
 }
 [data-testid="stSidebarNav"] { display: none; }
 
-/* 🌟 입력창(Input, TextArea, Selectbox) 초미니멀 디자인 (첨부 이미지 반영) */
+/* 🌟 입력창(Input, TextArea, Selectbox) 초미니멀 디자인 */
 .stTextInput > div > div > input,
 .stTextArea > div > div > textarea,
 .stSelectbox > div > div > div {
@@ -103,23 +103,23 @@ button[title="Collapse sidebar"],
     margin-top: 24px;
 }
 
-/* 라디오 버튼(토글 형태) 스타일링 */
+/* 🌟 라디오 버튼(Type: Draft/Reply) 초미니멀 스타일링 */
 div[role="radiogroup"] {
-    gap: 0px;
-    background: var(--input-bg);
-    padding: 4px;
-    border-radius: var(--radius);
-    border: 0.5px solid var(--border-color);
+    gap: 24px !important; /* 버튼 사이 간격 넉넉하게 */
+    background: transparent !important; /* 배경 투명하게 */
+    padding: 8px 4px !important; /* 패딩 조정 */
+    border: none !important; /* 기존 박스 테두리 제거 */
     margin-bottom: 8px;
 }
 div[role="radiogroup"] label {
-    padding: 6px 12px;
-    border-radius: 6px;
-    margin: 0;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
     color: var(--text-color) !important;
 }
 
-/* 상태 뱃지 잘림 방지 추가 */
+/* 상태 뱃지 */
 .status-badge {
     display: inline-block;
     padding: 6px 12px;
@@ -163,7 +163,7 @@ div[role="radiogroup"] label {
 st.markdown(custom_css, unsafe_allow_html=True)
 # ==============================================================================
 
-# 2. 세션 상태 초기화 (이모지 제거)
+# 2. 세션 상태 초기화
 if "status" not in st.session_state:
     st.session_state.status = "Waiting"
 if "result_subject" not in st.session_state:
