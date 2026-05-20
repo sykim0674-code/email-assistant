@@ -2,7 +2,7 @@ import streamlit as st
 import google.generativeai as genai
 import time
 
-# 1. 페이지 기본 설정 (전체 화면 사용)
+# 1. 페이지 기본 설정 (전체 화면 사용, 사이드바 기본 열림)
 st.set_page_config(page_title="Mail Assistant", page_icon="✉️", layout="wide", initial_sidebar_state="expanded")
 
 # ==============================================================================
@@ -52,14 +52,15 @@ button[title="Collapse sidebar"],
     display: none !important; 
 }
 
-/* 좌측 패널 (Sidebar) 고정 및 스타일링 */
+/* 🌟 좌측 패널 (Sidebar) 화면에 강제 고정 (절대 안 없어지게 처리) */
 [data-testid="stSidebar"] {
-    background-color: var(--bg-color);
-    border-right: 0.5px solid var(--border-color);
+    background-color: var(--bg-color) !important;
+    border-right: 0.5px solid var(--border-color) !important;
     min-width: 400px !important;
     max-width: 400px !important;
+    transform: none !important; /* 사이드바 숨김 애니메이션 무력화 */
+    visibility: visible !important; /* 창이 작아져도 강제로 항상 표시 */
 }
-[data-testid="stSidebarNav"] { display: none; }
 
 /* 🌟 입력창(Input, TextArea, Selectbox) 초미니멀 디자인 */
 .stTextInput > div > div > input,
@@ -163,7 +164,7 @@ div[role="radiogroup"] label {
 st.markdown(custom_css, unsafe_allow_html=True)
 # ==============================================================================
 
-# 2. 세션 상태 초기화
+# 2. 세션 상태 초기화 (이모지 제거)
 if "status" not in st.session_state:
     st.session_state.status = "Waiting"
 if "result_subject" not in st.session_state:
