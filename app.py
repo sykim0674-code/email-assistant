@@ -17,8 +17,8 @@ custom_css = """
 :root {
     --bg-color: #ffffff;
     --text-color: #111111;
-    --text-muted: #666666;
-    --input-bg: #f5f5f5;
+    --text-muted: #888888;
+    --input-bg: #f9f9f9;
     --border-color: #e0e0e0;
     --radius: 8px;
     --font-family: 'Inter', 'Noto Sans KR', sans-serif;
@@ -30,7 +30,7 @@ custom_css = """
         --bg-color: #121212;
         --text-color: #ffffff;
         --text-muted: #a0a0a0;
-        --input-bg: #222222;
+        --input-bg: #1e1e1e;
         --border-color: #333333;
     }
 }
@@ -42,11 +42,12 @@ html, body, [class*="st-"] {
 }
 .stApp { background-color: var(--bg-color); }
 
-/* 상단 헤더 및 불필요한 기본 UI 숨기기 */
+/* 상단 헤더 및 사이드바 접기 아이콘 완벽 숨기기 */
 [data-testid="stAppViewBlockContainer"] > div:first-child,
 header[data-testid="stHeader"],
 [data-testid="collapsedControl"],
 [data-testid="stSidebarCollapsedControl"],
+button[title="Collapse sidebar"],
 #MainMenu, footer, .stDeployButton { 
     display: none !important; 
 }
@@ -60,23 +61,33 @@ header[data-testid="stHeader"],
 }
 [data-testid="stSidebarNav"] { display: none; }
 
-/* 입력창(Input, TextArea, Selectbox) 플랫 디자인 */
+/* 🌟 입력창(Input, TextArea, Selectbox) 초미니멀 디자인 (첨부 이미지 반영) */
 .stTextInput > div > div > input,
 .stTextArea > div > div > textarea,
 .stSelectbox > div > div > div {
-    background-color: var(--input-bg) !important;
-    border: 0.5px solid var(--border-color) !important;
-    border-radius: var(--radius) !important;
+    background-color: transparent !important; /* 배경 투명하게 */
+    border: none !important; /* 전체 테두리 제거 */
+    border-bottom: 1px solid var(--border-color) !important; /* 하단 선만 남김 */
+    border-radius: 0 !important; /* 둥근 모서리 제거 */
     box-shadow: none !important;
     color: var(--text-color) !important;
     font-size: 14px !important;
+    padding-left: 4px !important;
+    padding-right: 4px !important;
 }
 
-/* 포커스 시 테두리 진하게 */
+/* 포커스 시 하단 선만 진하게 변경 */
 .stTextInput > div > div > input:focus,
 .stTextArea > div > div > textarea:focus,
 .stSelectbox > div > div > div:focus {
-    border-color: var(--text-color) !important;
+    border-bottom: 1px solid var(--text-color) !important;
+}
+
+/* 텍스트 라벨 (Title) 색상 연하게 조정 */
+.stTextInput label, .stSelectbox label, .stTextArea label, .stRadio label {
+    color: var(--text-muted) !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
 }
 
 /* 메일 작성하기 메인 버튼 (강제 검정 배경 + 흰 글씨) */
@@ -89,7 +100,7 @@ header[data-testid="stHeader"],
     height: 48px;
     font-weight: 600;
     box-shadow: none !important;
-    margin-top: 10px;
+    margin-top: 24px;
 }
 
 /* 라디오 버튼(토글 형태) 스타일링 */
@@ -99,11 +110,13 @@ div[role="radiogroup"] {
     padding: 4px;
     border-radius: var(--radius);
     border: 0.5px solid var(--border-color);
+    margin-bottom: 8px;
 }
 div[role="radiogroup"] label {
     padding: 6px 12px;
     border-radius: 6px;
     margin: 0;
+    color: var(--text-color) !important;
 }
 
 /* 상태 뱃지 잘림 방지 추가 */
