@@ -42,17 +42,18 @@ html, body, [class*="st-"] {
 }
 .stApp { background-color: var(--bg-color); }
 
-/* 상단 헤더 및 사이드바 접기 아이콘 완벽 숨기기 */
+/* 🌟 상단 헤더 및 사이드바 접기 아이콘 완벽 숨기기 (업데이트) */
 [data-testid="stAppViewBlockContainer"] > div:first-child,
 header[data-testid="stHeader"],
 [data-testid="collapsedControl"],
 [data-testid="stSidebarCollapsedControl"],
+[data-testid="stSidebarCollapseButton"],
 button[title="Collapse sidebar"],
 #MainMenu, footer, .stDeployButton { 
     display: none !important; 
 }
 
-/* 🌟 좌측 패널 (Sidebar) 화면에 강제 고정 (절대 안 없어지게 처리) */
+/* 좌측 패널 (Sidebar) 화면에 강제 고정 (절대 안 없어지게 처리) */
 [data-testid="stSidebar"] {
     background-color: var(--bg-color) !important;
     border-right: 0.5px solid var(--border-color) !important;
@@ -61,8 +62,9 @@ button[title="Collapse sidebar"],
     transform: none !important; /* 사이드바 숨김 애니메이션 무력화 */
     visibility: visible !important; /* 창이 작아져도 강제로 항상 표시 */
 }
+[data-testid="stSidebarNav"] { display: none; }
 
-/* 🌟 입력창(Input, TextArea, Selectbox) 초미니멀 디자인 */
+/* 입력창(Input, TextArea, Selectbox) 초미니멀 디자인 */
 .stTextInput > div > div > input,
 .stTextArea > div > div > textarea,
 .stSelectbox > div > div > div {
@@ -104,7 +106,7 @@ button[title="Collapse sidebar"],
     margin-top: 24px;
 }
 
-/* 🌟 라디오 버튼(Type: Draft/Reply) 초미니멀 스타일링 */
+/* 라디오 버튼(Type: Draft/Reply) 초미니멀 스타일링 */
 div[role="radiogroup"] {
     gap: 24px !important; /* 버튼 사이 간격 넉넉하게 */
     background: transparent !important; /* 배경 투명하게 */
@@ -164,7 +166,7 @@ div[role="radiogroup"] label {
 st.markdown(custom_css, unsafe_allow_html=True)
 # ==============================================================================
 
-# 2. 세션 상태 초기화 (이모지 제거)
+# 2. 세션 상태 초기화
 if "status" not in st.session_state:
     st.session_state.status = "Waiting"
 if "result_subject" not in st.session_state:
@@ -175,7 +177,9 @@ if "result_body" not in st.session_state:
 # 3. 좌측 패널 (Sidebar)
 with st.sidebar:
     st.markdown("<h2 style='margin-top:0;'>✉️ Mail Assistant</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: var(--text-muted); font-size: 13px; margin-bottom: 24px;'>초안부터 답장까지, 핵심 내용만 입력하면 상황에 맞는 메일을 작성해 줍니다.</p>", unsafe_allow_html=True)
+    
+    # 🌟 사이드바 설명 심플하게 변경
+    st.markdown("<p style='color: var(--text-muted); font-size: 13px; margin-bottom: 24px;'>메일 작성 도구</p>", unsafe_allow_html=True)
     
     email_type = st.radio("Type", ["Draft", "Reply"], horizontal=True)
     lang = st.selectbox("Language", ["한국어", "English", "日本語", "中文"])
@@ -191,10 +195,10 @@ with st.sidebar:
     if email_type == "Reply":
         received_email = st.text_area("Previous email", placeholder="Paste the previous email here", height=100)
     
-    # Generate 버튼
-    submit_btn = st.button("🚀 Generate", type="primary", use_container_width=True)
+    # Generate 버튼 (이모지 제거, 순수 텍스트)
+    submit_btn = st.button("Generate", type="primary", use_container_width=True)
 
-# 4. 우측 패널 (상단 툴바 버튼 제거, 뱃지만 표시)
+# 4. 우측 패널 뱃지
 st.markdown(f"<div class='status-badge'>{st.session_state.status}</div>", unsafe_allow_html=True)
 
 # 5. 메일 생성 로직
@@ -275,10 +279,11 @@ elif st.session_state.status == "Generating":
 
 # 6. 기본 상태 및 완료 상태 화면 출력
 if st.session_state.status == "Waiting":
+    # 🌟 이모지 간격 축소, 텍스트 변경 및 크기 축소
     st.markdown("""
         <div style='display:flex; flex-direction:column; align-items:center; justify-content:center; height: 60vh; color: var(--border-color);'>
-            <h1 style='font-size: 48px; margin-bottom: 16px;'>✉️</h1>
-            <h3 style='color: var(--text-muted); font-weight: 500;'>Please fill out the form on the left to generate an email</h3>
+            <h1 style='font-size: 48px; margin-bottom: 4px;'>✉️</h1>
+            <p style='color: var(--text-muted); font-size: 15px; font-weight: 500; margin-top: 0;'>Please fill out the form to generate an email</p>
         </div>
     """, unsafe_allow_html=True)
 
